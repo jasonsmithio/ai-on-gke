@@ -171,29 +171,56 @@ You will notice that we are using the `LoadBalancer` service. While this is no l
 kubectl apply -f mixtral-huggingface.yaml
 ```
 
+Now note, part of the process is downloading a number of weights (19 to be precise) and for the shards to run. Even if the pods appear to be running, it may be 10 to 15 minutes or so before you can actually start using the Mixtral LLM.
+
 ### Testing
+
+At this point, you should be able to access the model via URL. You may be curious, what can you do now. Well let's look at the documentation. 
+
+This step is also a good way to test if your model is running. Let's get the IP address of our service. 
 
 ```bash
 URL=$(kubectl get service mixtral-8x7b-service -o jsonpath=’{.status.loadBalancer.ingress[0].ip}’)
 echo “http://${URL}/docs"
 ```
 
+The `echo` command will give you a URL that you can copy and paste into your browser. You should see something like this. 
 
+![Mistral Docs Image](images/mixtral-docs-page.png)
 
+If you see something similar to that image, congratulations, everything is working. If not, give it another 5 or so minutes and try again. 
 
-Test after running Docker Container Locally
-```bash
-curl -s 127.0.0.1:3000/generate -X POST -H 'Content-Type: application/json' — data-binary @- <<EOF | jq -r '.generated_text'
+If you click around, you can get sample documentation to show you how to call the Mixtral APIs and use the LLM. For example, choose the very first option. It will say `POST /`. You will see an option that says *Try It Out*. Click that and then a sample JSON body will apear. Click execute and it will run and give you a response. 
+
+If you want to do a real test, choose the `/generate` option. 
+
+```json
 {
-  "inputs": "[INST] <<SYS>>\nYou are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. \
-  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that \
-  your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain \
-  why instead of answering something not correct. If you don’t know the answer to a question, please don’t share false \
-  information.\n<</SYS>>\nHow to deploy a container on K8s?[/INST]",
-  "parameters": {"max_new_tokens": 400}
+ "inputs": "[INST] You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don’t know the answer to a question, please don’t share false information. What is a Kubernetes secret?[/INST]",
+ "parameters": {
+ "best_of": 1,
+ "do_sample": true,
+ "max_new_tokens": 400,
+ "repetition_penalty": 1.03,
+ "return_full_text": false,
+ "temperature": 0.5,
+ "top_k": 10,
+ "top_n_tokens": 5,
+ "top_p": 0.95,
+ "truncate": null,
+ "typical_p": 0.95,
+ "watermark": true
+ }
 }
-EOF
 ```
 
+
+## Clean Up
+
+This LLM on GKE experiment will be expensive so once you are done, you will want to delete it. You can do this simply by running the following command. 
+
+```bash
+gcloud container clusters delete $CLUSTER_NAME — region $REGION
+```
 
 # Coming Soon... Pulumi!
